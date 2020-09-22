@@ -20,7 +20,7 @@ Either save it as a file (.xyz or .ply file formats suggested) and display it us
 g++ image_matching.cpp -o image_matching -std=c++11 `pkg-config --cflags --libs opencv`
 ```
 
-##Usage
+## Usage
 ```
 ./image_matching view1.png  view2.png 
 ```
