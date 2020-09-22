@@ -1,16 +1,10 @@
 /*
  * Compiling
- * g++ image_matching.cpp -o image_matching -std=c++11 `pkg-config --cflags --libs opencv`
+ * 
  * example of usage
- * ./image_matching ../middlebury/Art/view1.png  ../middlebury/Art/view5.png 
+ * 
  */
- 
- 
- /*
-  * hints:
-  * I have generated a disparity map using the OpenCV StereoBM and StereoSGBM functions and a pair of cameras.
-  * 
-  */ 
+  
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <math.h>
@@ -83,7 +77,7 @@ int main( int argc, char** argv )
 					int scoreG = pow(imgL.at<cv::Vec3b>(i,j)[1] - imgR.at<cv::Vec3b>(i,k)[1],2);
 					int scoreB = pow(imgL.at<cv::Vec3b>(i,j)[2] - imgR.at<cv::Vec3b>(i,k)[2],2);
 					
-					int matchingScore = scoreR + scoreG + scoreB;
+					int matchingScore = (scoreR + scoreG + scoreB);
 					
 					if (minScore > matchingScore) {
 						minScore = matchingScore;
