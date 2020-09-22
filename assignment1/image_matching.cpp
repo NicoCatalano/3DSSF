@@ -1,10 +1,3 @@
-/*
- * Compiling
- * 
- * example of usage
- * 
- */
-  
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <math.h>
@@ -44,51 +37,57 @@ int main( int argc, char** argv )
     } 
     
     //accessing each pixel
-	for(int i=0; i<imgR.rows; i++){
-		for(int j=0; j<imgR.cols; j++) {
+	for(int y=0; y<imgR.rows; y++){
+		for(int x=0; x<imgR.cols; x++) {
 			
-			//foreach pixel I'm getting the disparty looking in the window of the left heand side img
+			//foreach pixel I'm accessing all the pixel in the corresponding window Omega
 			int minScore = INT_MAX;
 			int dMin;
-			
-			int r = i - window;
-			int rLimit = i + window;
-			
-			//cheking not to go out of bounds
-			if (r < 0)
-				r = 0;
-			if (rLimit > imgR.rows)
-				rLimit = imgR.rows;
+
+			//for each pixel, exits multiples windows, each one for each d
+			for (int d=0; (d+x)<imgR.cols ; d++){
+				int windowDisparity = 0;
 				
-			for (; r < rLimit; r++){
-				
-				int k = j - window;
-				int kLimit = j + window;
-				
+				int v = y - window;
+				int vLimit = y + window;
 				
 				//cheking not to go out of bounds
-				if (k<0)
-					k = 0;
-				if (kLimit > imgR.cols)
-					kLimit = imgR.cols;
+				if (v < 0)
+					v = 0;
+				if (vLimit > imgR.rows)
+					vLimit = imgR.rows;
 					
-				for (; k < kLimit; k++){
-					int scoreR = pow(imgL.at<cv::Vec3b>(i,j)[0] - imgR.at<cv::Vec3b>(i,k)[0],2);
-					int scoreG = pow(imgL.at<cv::Vec3b>(i,j)[1] - imgR.at<cv::Vec3b>(i,k)[1],2);
-					int scoreB = pow(imgL.at<cv::Vec3b>(i,j)[2] - imgR.at<cv::Vec3b>(i,k)[2],2);
+				for (; v < vLimit; v++){
 					
-					int matchingScore = (scoreR + scoreG + scoreB);
+					int u = x - window;
+					int uLimit = x + window;
 					
-					if (minScore > matchingScore) {
-						minScore = matchingScore;
-						dMin = k;
+					
+					//cheking not to go out of bounds
+					if (u<0)
+						u = 0;
+					if (uLimit > imgR.cols)
+						uLimit = imgR.cols;
+						
+					for (; (u+d) < uLimit; u++){
+						int scoreR = pow(imgL.at<cv::Vec3b>(v,u)[0] - imgR.at<cv::Vec3b>(v,u+d)[0],2);
+						 int scoreG = pow(imgL.at<cv::Vec3b>(v,u)[1] - imgR.at<cv::Vec3b>(v,u+d)[1],2);
+						 int scoreB = pow(imgL.at<cv::Vec3b>(v,u)[2] - imgR.at<cv::Vec3b>(v,u+d)[2],2);
+						
+						windowDisparity += scoreR ;
+						
 					}
 				}
+
+				if (windowDisparity < minScore){
+					minScore = windowDisparity;
+					dMin = d;
+				}
+				
 			}
 			
 			//dispartiy is distance from the pixel
-			
-			disp.at<uchar>(i,j) = dMin - j;
+			disp.at<uchar>(y,x) = dMin*10;
 		}
 	}
 	
