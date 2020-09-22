@@ -1,4 +1,4 @@
-# 3DSSF
+# Assignment 1
 ## Subtask 1: Image matching
 
    - Read images using OpenCV or a similar tool.
