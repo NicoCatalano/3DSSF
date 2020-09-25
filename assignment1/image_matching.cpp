@@ -2,14 +2,17 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <math.h>
 #include <iostream>
+#include <fstream>
 
-#define window 11
+#define window 15
 
 using namespace cv;
 using namespace std;
 
 int main( int argc, char** argv )
 {
+	// Create and open a text file
+  	ofstream MyFile("out.txt");
     if( argc != 3)
     {
      cout <<" Usage: image_mattching imgL imgR" << endl;
@@ -23,8 +26,8 @@ int main( int argc, char** argv )
     imgR = imread(argv[2], cv::IMREAD_COLOR);   
 
 	//costructing dipsarity representing obj (gray scale - 1 channel)
-	disp = Mat(imgL.rows,imgL.cols,CV_8UC1);
-
+	//disp = Mat(imgL.rows,imgL.cols,CV_8UC1);
+	disp = Mat::zeros(imgL.rows,imgL.cols,CV_8UC1);
     if(! imgL.data )                              // Check for invalid input
     {
         cout <<  "Could not open or find the image"<<argv[1]<< std::endl ;
@@ -35,6 +38,10 @@ int main( int argc, char** argv )
         cout <<  "Could not open or find the image"<<argv[2]<< std::endl ;
         return -1;
     } 
+
+	int maxDisparty = 0;
+	int minDisparity = INT_MAX;
+
     
     //accessing each pixel
 	for(int y=0; y<imgR.rows; y++){
@@ -87,10 +94,30 @@ int main( int argc, char** argv )
 			}
 			
 			//dispartiy is distance from the pixel
-			disp.at<uchar>(y,x) = dMin*10;
+			disp.at<uchar>(y,x) = dMin;
+			if ( disp.at<uchar>(y,x) > maxDisparty)
+				maxDisparty = disp.at<uchar>(y,x);
+			else if (disp.at<uchar>(y,x) < minDisparity)
+				minDisparity = disp.at<uchar>(y,x);
+		
 		}
 	}
 	
+	//Normalization
+	cout << "MAX disparity:" << maxDisparty << " min disparity: " << minDisparity <<endl;
+	for(int y=0; y<imgR.rows; y++){
+		for(int x=0; x<imgR.cols; x++) {
+		float tmp = (int)disp.at<uchar>(y,x);
+			tmp = tmp / maxDisparty;	
+			tmp = tmp * 254;
+
+			MyFile <<(int)tmp <<", ";
+			
+			disp.at<uchar>(y,x) = (int)tmp;
+
+		
+		}
+	}
 	
     namedWindow( "Left hend side image", WINDOW_AUTOSIZE );// Create a window for display.
     imshow( "Left hend side image", imgL );                   // Show our image inside it.
@@ -101,6 +128,7 @@ int main( int argc, char** argv )
     namedWindow( "Disparity image", WINDOW_AUTOSIZE );
     imshow( "Disparity image", disp );  
 
+	MyFile.close();
 
     waitKey(0);                                          // Wait for a keystroke in the window
     return 0;
