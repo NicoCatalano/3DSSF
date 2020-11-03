@@ -21,7 +21,7 @@ main (int argc, char **argv)
 
     // stereo estimation parameters
 	const int dmin = 200;
-	int window_size = 3;
+	int window_size = 5;
 	float weight = 5000;
 	const double scale = 3;
 
@@ -52,6 +52,11 @@ main (int argc, char **argv)
         std::cerr << "No img1 data" << std::endl;
         return EXIT_FAILURE;
     }
+    
+	std::cout<<" window size: ";
+	std::cin >> window_size;
+	std::cout<<"weight:";
+	std::cin >> weight;
 
 
     std::cout << "-------------- Parameters --------------" << std::endl;
@@ -75,20 +80,36 @@ main (int argc, char **argv)
     // Naive disparity image
     cv::Mat naive_disparities = cv::Mat::zeros (height, width, CV_8UC1);
 
-/*   
-   StereoEstimation_Naive(
-   window_size,dmin, height, width,
-   image1, image2,
-   naive_disparities, scale);
- 
- 
-    StereoEstimation_naive_optimized (window_size, dmin, height, width,
+	std::cout  <<" select Algorithm:" <<std::endl<<
+					"\t 1 Naive"<<std::endl<<
+					"\t 2 Naive Optimized"<<std::endl<<
+					"\t 3 Dynamic prog Approach"<<std::endl;
+	int selection;
+	
+	std::cin >> selection;
+	
+	switch(selection){
+		case 1:
+			
+			StereoEstimation_Naive(
+				   window_size,dmin, height, width,
+				   image1, image2,
+				   naive_disparities, scale);
+			break;
+			
+		case 2:    
+			StereoEstimation_naive_optimized (window_size, dmin, height, width,
+                       image1, image2, naive_disparities, scale);
+			break;
+		case 3:
+			StereoEstimation_dynamic (window_size, dmin, height, width, weight,
                                 image1, image2, naive_disparities, scale);
-*/ 
- 
+	
+		
+	}
 
-    StereoEstimation_dynamic (window_size, dmin, height, width, weight,
-                                image1, image2, naive_disparities, scale);
+
+
     ////////////
     // Output //
     ////////////
