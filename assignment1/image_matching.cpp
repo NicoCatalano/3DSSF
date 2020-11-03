@@ -16,12 +16,12 @@ main (int argc, char **argv)
     /////////////////
 
     // camera setup parameters
-    const double focal_legth = 1247;
-    const double baseline = 213;
+    const double focal_legth = 3740; //px
+    const double baseline = 160; //mm
 
     // stereo estimation parameters
-	const int dmin = 128;
-	int window_size = 7;
+	const int dmin = 200;
+	int window_size = 3;
 	float weight = 5000;
 	const double scale = 3;
 
@@ -82,7 +82,7 @@ main (int argc, char **argv)
    naive_disparities, scale);
  
  
-    StereoEstimation_dynamic2 (window_size, dmin, height, width,
+    StereoEstimation_naive_optimized (window_size, dmin, height, width,
                                 image1, image2, naive_disparities, scale);
 */ 
  
@@ -115,7 +115,7 @@ main (int argc, char **argv)
     return 0;
 }
 
-// TODO: consider slinding windows (lab ses ~ minute34), or parallelization
+
 void
 StereoEstimation_Naive (const int &window_size,
                         const int &dmin,
@@ -214,7 +214,115 @@ StereoEstimation_Naive (const int &window_size,
     std::cout << std::endl;
 }
 
+void StereoEstimation_naive_optimized (const int &window_size,
+                          const int &dmin,
+                          int height,
+                          int width,
+                          cv::Mat & image1, cv::Mat & image2,
+                          cv::Mat & naive_disparities, const double &scale){
 
+    int half_window_size = window_size / 2;
+
+
+	//The array where to store  previous locals norms of columns
+	int r_local_norms[width];
+	int l_local_norms[width];
+	
+	//init locals norms of columns
+	for (int v = 0; v <= width; v++){
+		int local_l_sum = 0;
+		int local_r_sum = 0;
+		
+		for (int u = 0; u < window_size; u++){
+			int val_left = image1.at < uchar > ( u, v);	
+			int val_right = image2.at < uchar > ( u, v);	
+			
+			local_l_sum += val_left;
+			local_r_sum += val_right;
+		}
+		
+		// column scan ended, store the value in the array
+		l_local_norms[v] = local_l_sum;
+		r_local_norms[v] = local_r_sum;
+	}
+	
+    for (int i = half_window_size; i < height - half_window_size; i++)
+    {
+        std::cout << "Calculating disparitiesfor the naive approch... " << std::ceil (((i - half_window_size + 1) / static_cast <double >(height - window_size + 1)) *100) << "%\r" << std::flush;	
+		
+        
+		//removing the last raw, and adding the new own from the sum
+		if( i > half_window_size && i < (height - half_window_size)){	
+			for (int v = 0; v < width; v++){
+				int last_val_left = image1.at < uchar > ( i - half_window_size - 1, v);	
+				int last_val_right = image2.at < uchar > (i - half_window_size - 1, v);	
+				
+				int new_val_left = image1.at < uchar > (i + half_window_size , v);	
+				int new_val_right = image2.at < uchar > (i + half_window_size , v);	
+			
+				l_local_norms[v] += (new_val_left - last_val_left) ;
+				r_local_norms[v] += (new_val_right - last_val_right);
+				
+			}
+			
+		}
+        
+        for (int j = half_window_size; j < width - half_window_size; j++)
+        {
+            int min_ssd = INT_MAX;
+            int disparity = 0;
+
+			
+            for (int d = -j + half_window_size; d < width - j - half_window_size; d++)
+            {
+                int ssd = 0;
+
+                int norm_left = 0;
+                int norm_right = 0;
+
+
+                //summing the windows_size partal sum already computed
+                for(int k  = j - half_window_size; k <= j + half_window_size; k++){
+					norm_left += l_local_norms[k];
+                    norm_right += r_local_norms[k+d];
+				}
+
+                norm_left /= window_size * window_size;
+                norm_right /= window_size * window_size;
+
+                norm_left = std::max (1, norm_left);
+                norm_right = std::max (1, norm_right);
+
+
+                for (int u = -half_window_size; u <= half_window_size; u++)
+                {
+                    for (int v = -half_window_size; v <= half_window_size; v++)
+                    {
+                        int val_left = image1.at < uchar > (i + u, j + v);	// sampling in the rigth image
+                        int val_right = image2.at < uchar > (i + u, j + v + d);	//sampling in the left image (considering disparity)
+
+                        //ssd += (val_left - val_right) * (val_left - val_right);s
+                        ssd +=(val_left / norm_left - val_right / norm_right) * (val_left / norm_left - val_right / norm_right);
+                    }
+                }
+
+
+
+                if (ssd < min_ssd){
+                    min_ssd = ssd;
+                    disparity = d;
+                }
+            }
+
+            naive_disparities.at < uchar > (i - half_window_size,j - half_window_size) = std::abs (disparity) * scale;
+        }
+    }
+
+
+    std::cout << "Calculating disparities for the naive approach... Done.\r" << std::flush;
+    std::cout << std::endl;
+    
+}
 void StereoEstimation_dynamic (	  const int &window_size,
 								  const int &dmin,
 								  int height,
@@ -381,184 +489,8 @@ void StereoEstimation_dynamic (	  const int &window_size,
 
 
 
-// TODO: consider parallelization
-void StereoEstimation_dynamic2 (const int &window_size,
-                          const int &dmin,
-                          int height,
-                          int width,
-                          cv::Mat & image1, cv::Mat & image2,
-                          cv::Mat & naive_disparities, const double &scale){
-
-    int half_window_size = window_size / 2;
 
 
-	//The array where to store  previous locals norms of columns
-	int r_local_norms[width];
-	int l_local_norms[width];
-	
-	//init locals norms of columns
-	for (int v = 0; v <= width; v++){
-		int local_l_sum = 0;
-		int local_r_sum = 0;
-		
-		for (int u = 0; u < window_size; u++){
-			int val_left = image1.at < uchar > ( u, v);	
-			int val_right = image2.at < uchar > ( u, v);	
-			
-			local_l_sum += val_left;
-			local_r_sum += val_right;
-		}
-		
-		// column scan ended, store the value in the array
-		l_local_norms[v] = local_l_sum;
-		r_local_norms[v] = local_r_sum;
-	}
-	
-    for (int i = half_window_size; i < height - half_window_size; i++)
-    {
-        std::cout << "Calculating disparitiesfor the naive approch... " << std::ceil (((i - half_window_size + 1) / static_cast <double >(height - window_size + 1)) *100) << "%\r" << std::flush;	
-		
-        
-		//removing the last raw, and adding the new own from the sum
-		if( i > half_window_size && i < (height - half_window_size)){	
-			for (int v = 0; v < width; v++){
-				int last_val_left = image1.at < uchar > ( i - half_window_size - 1, v);	
-				int last_val_right = image2.at < uchar > (i - half_window_size - 1, v);	
-				
-				int new_val_left = image1.at < uchar > (i + half_window_size , v);	
-				int new_val_right = image2.at < uchar > (i + half_window_size , v);	
-			
-				l_local_norms[v] += (new_val_left - last_val_left) ;
-				r_local_norms[v] += (new_val_right - last_val_right);
-				
-			}
-			
-		}
-        
-        for (int j = half_window_size; j < width - half_window_size; j++)
-        {
-            int min_ssd = INT_MAX;
-            int disparity = 0;
-
-			
-            for (int d = -j + half_window_size; d < width - j - half_window_size; d++)
-            {
-                int ssd = 0;
-
-                int norm_left = 0;
-                int norm_right = 0;
-                /*
-                 * NORMALIZATION SSD
-                 * sum |  val_left / norm_left - val_rigth /norm_rigth |²
-                 * norm_left is constant for all piexls eg the avarege of all pixels
-                 * norm_rigth is constant for all piexls
-                 *
-                 * some alternatives are:
-                 * Cross correlation
-                 * Normalized cross correlation
-                 * Zero -meannormalized correlation
-                 */
-                    
-
-                //summing the windows_size partal sum already computed
-                for(int k  = j - half_window_size; k <= j + half_window_size; k++){
-					norm_left += l_local_norms[k];
-                    norm_right += r_local_norms[k+d];
-				}
-
-                norm_left /= window_size * window_size;
-                norm_right /= window_size * window_size;
-
-                norm_left = std::max (1, norm_left);
-                norm_right = std::max (1, norm_right);
-
-
-                for (int u = -half_window_size; u <= half_window_size; u++)
-                {
-                    for (int v = -half_window_size; v <= half_window_size; v++)
-                    {
-                        int val_left = image1.at < uchar > (i + u, j + v);	// sampling in the rigth image
-                        int val_right = image2.at < uchar > (i + u, j + v + d);	//sampling in the left image (considering disparity)
-
-                        //ssd += (val_left - val_right) * (val_left - val_right);s
-                        ssd +=(val_left / norm_left - val_right / norm_right) * (val_left / norm_left - val_right / norm_right);
-                    }
-                }
-
-
-
-                if (ssd < min_ssd){
-                    min_ssd = ssd;
-                    disparity = d;
-                }
-            }
-
-            naive_disparities.at < uchar > (i - half_window_size,j - half_window_size) = std::abs (disparity) * scale;
-        }
-    }
-
-/*
-    std::cout << "Calculating disparities for the naive approach... Done.\r" << std::flush;
-    std::cout << std::endl;
-    */ 
-}
-
-/*
-void Disparity2PointCloud(
-	const std::string& output_file,
-	int height, int width, cv::Mat& disparities,
-	const int& window_size,
-	const int& dmin, const double& baseline, const double& focal_length){
-		  std::stringstream out3d;
-  out3d << output_file << ".xyz";
-  std::ofstream outfile(out3d.str());
-  for (int i = 0; i < height - window_size; ++i) {
-    std::cout << "Reconstructing 3D point cloud from disparities... " << std::ceil(((i) / static_cast<double>(height - window_size + 1)) * 100) << "%\r" << std::flush;
-    for (int j = 0; j < width - window_size; ++j) {
-      if (disparities.at<uchar>(i, j) == 0) continue;
-
-		/*
-		 * 	% %Z = fB/d
-			  % where
-			  % Z = distance along the camera Z axis
-			  % f = focal length (in pixels)
-			  % B = baseline (in metres)
-			  % d = disparity (in pixels)
-			  % % After Z is determined, X and Y can be calculated using the usual projective         camera equations:
-			 %
-			  % X = uZ/f
-			  % Y = vZ/f
-
-			 % where
-			 % u and v are the pixel location in the 2D image
-			 % X, Y, Z is the real 3d position
-
-			  % Note: u and v are not the same as row and column.
-			  * You must account for the image   center. You can get the image center using the triclopsGetImageCenter() function. Then you find u and v by:
-
-			  % u = col - centerCol
-			  % v = row - centerRow
-
-			  % Note: If u, v, f, and d are all in pixels and X,Y,Z are all in the meters, the units will always work i.e. pixel/pixel = no-unit-ratio = m/m.
-
-      // TODO
-      const int u = j - width/2;
-      const int v = i - height/2;
-
-      const double Z = focal_length * baseline / disparities.at<uchar>(i, j);
-      const double X =  u * Z / focal_length;
-      const double Y =  v * Z / focal_length;
-
-
-      outfile << X << " " << Y << " " << Z << std::endl;
-    }
-  }
-
-  std::cout << "Reconstructing 3D point cloud from disparities... Done.\r" << std::flush;
-  std::cout << std::endl;
-}
-
-* */
 
 void
 Disparity2PointCloud (const std::string & output_file,
@@ -581,34 +513,10 @@ Disparity2PointCloud (const std::string & output_file,
             if (disparities.at < uchar > (i, j) == 0)
                 continue;
 
-            /*
-             *      % %Z = fB/d
-             % where
-             % Z = distance along the camera Z axis
-             % f = focal length (in pixels)
-             % B = baseline (in metres)
-             % d = disparity (in pixels)
-             % % After Z is determined, X and Y can be calculated using the usual projective         camera equations:
-             %
-             % X = uZ/f
-             % Y = vZ/f
-
-             % where
-             % u and v are the pixel location in the 2D image
-             % X, Y, Z is the real 3d position
-
-             % Note: u and v are not the same as row and column.
-             * You must account for the image   center. You can get the image center using the triclopsGetImageCenter() function. Then you find u and v by:
-
-             % u = col - centerCol
-             % v = row - centerRow
-
-             % Note: If u, v, f, and d are all in pixels and X,Y,Z are all in the meters, the units will always work i.e. pixel/pixel = no-unit-ratio = m/m.
-             * */
-            // TODO
             const double u = j - width / 2;
             const double v = i - height / 2;
-            const double d = disparities.at < uchar > (i, j);
+            
+            const double d = disparities.at < uchar > (i, j) +dmin;
 
             const double Z = (double) focal_length * baseline / d;
             const double X = -(baseline * (2 * j - d)) / (2 * d);
