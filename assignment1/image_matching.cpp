@@ -259,7 +259,7 @@ void StereoEstimation_dynamic (	  const int &window_size,
 	// --- matching every pair of scanLine ---
 	for(int i=half_window_size;i< (height - half_window_size);i++) {
 				
-		std::cout << "Calculating di sparities for the dynamic approch... "<< std::ceil ( (i /((double)height) *100)) << "%\r" << std::flush;	
+		std::cout << "Calculating di sparities for the dynamic approch... "<< std::ceil ( ((i- half_window_size + 1) /((double)height- half_window_size + 1) *100)) << "%\r" << std::flush;	
 		
 		// scanLine
 		for(int j=0;j<width;j++) {

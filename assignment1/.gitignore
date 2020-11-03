@@ -1,3 +1,7 @@
 *.o
 image_matching
+out.png  
+out.txt_naive.png  
+out.txt.xyz  
+out.xyz 
 **/dataset
