@@ -22,5 +22,6 @@ g++ image_matching.cpp -o image_matching -std=c++11 `pkg-config --cflags --libs 
 
 ## Usage
 ```
-./image_matching view1.png  view2.png 
+./image_matching dataset/Art/view1.png dataset/Art/view5.png out
+
 ```
