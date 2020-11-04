@@ -25,3 +25,15 @@ g++ image_matching.cpp -o image_matching -std=c++11 `pkg-config --cflags --libs 
 ./image_matching dataset/Art/view1.png dataset/Art/view5.png out
 
 ```
+
+
+## Example of parameters
+If running on low resolution images (463 x 370 px)
+	window size: 2
+	weight:500
+	
+If running of full resoultion images (1390 x 1110px)
+	window size: 12
+	weight:500000
+	
+

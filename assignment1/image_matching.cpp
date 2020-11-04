@@ -53,7 +53,7 @@ main (int argc, char **argv)
         return EXIT_FAILURE;
     }
     
-	std::cout<<" window size: ";
+	std::cout<<"window size: ";
 	std::cin >> window_size;
 	std::cout<<"weight:";
 	std::cin >> weight;
@@ -64,8 +64,7 @@ main (int argc, char **argv)
     std::cout << "baseline = " << baseline << std::endl;
     std::cout << "window_size" << window_size << std::endl;
     std::cout << "occlusion weigths" << weight << std::endl;
-    std::
-    cout << "disparity added due to iamge cropping = " << dmin << std::endl;
+    std::cout << "disparity added due to iamge cropping = " << dmin << std::endl;
     std::cout << "scaling of disparity images to show = " << scale << std::endl;
     std::cout << "output filename = " << output_file << std::endl;
     std::cout << "----------------------------------------" << std::endl;
@@ -127,8 +126,8 @@ main (int argc, char **argv)
     cv::imwrite (out1.str (), naive_disparities);
 
 
-    cv::namedWindow ("Naive", cv::WINDOW_AUTOSIZE);
-    cv::imshow ("Naive", naive_disparities);
+    cv::namedWindow ("disparity map", cv::WINDOW_AUTOSIZE);
+    cv::imshow ("disparity map", naive_disparities);
 
 
     cv::waitKey (0);
@@ -416,8 +415,8 @@ void StereoEstimation_dynamic (	  const int &window_size,
                 {
                     for (int v = -half_window_size; v <= half_window_size; v++)
                     {
-                        int val_left = image1.at < uchar > (i + v, k+ u );	
-                        int val_right = image2.at < uchar > (i + v, j+ u);	
+                        int val_left = image1.at < uchar > (i + u, k+ v );	
+                        int val_right = image2.at < uchar > (i + u, j+ v);	
 
                         ssd += (val_left - val_right) * (val_left - val_right);
                     }
@@ -507,6 +506,7 @@ void StereoEstimation_dynamic (	  const int &window_size,
     std::cout << "Calculating disparities for the dynamic programmig approach... Done.\r" <<std::flush;
     std::cout << std::endl;
 }
+
 
 
 
