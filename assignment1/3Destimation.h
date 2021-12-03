@@ -1,3 +1,6 @@
+
+#include <opencv2/opencv.hpp>
+
 void StereoEstimation_Naive(
 	const int& window_size,
 	const int& dmin,

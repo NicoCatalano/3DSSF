@@ -17,7 +17,7 @@ Either save it as a file (.xyz or .ply file formats suggested) and display it us
 
 ## Compiling
 ```
-g++ image_matching.cpp -o image_matching -std=c++11 `pkg-config --cflags --libs opencv`
+g++ image_matching.cpp 3Destimation.cpp -o image_matching -std=c++11 `pkg-config --cflags --libs opencv
 ```
 
 ## Usage
